@@ -33,12 +33,6 @@ LANG_SAMPLES = {
     "c": "float calculate_discount(float price, float discount) {\n    return price - discount;\n}",
     "cpp": "class DiscountCalculator {\npublic:\n    double calculateDiscount(double price, double discount) {\n        return price * discount;\n    }\n};",
     "csharp": "public class ShoppingCart {\n    public decimal CalculateShipping(decimal weight, decimal distance) {\n        return weight * 2.5m;\n    }\n}",
-    "go": "package shipping\n\nfunc CalculateShipping(weight float64, distance float64) float64 {\n    return weight * 2.5;\n}",
-    "php": "<?php\nfunction calculateDiscount($price, $discount) {\n    return $price - $discount;\n}",
-    "ruby": "def calculate_discount(price, discount)\n    price * discount\nend",
-    "swift": "func calculateShipping(weight: Double, distance: Double) -> Double {\n    return weight * 2.5\n}",
-    "kotlin": "fun calculateDiscount(price: Double, discount: Double): Double {\n    return price * discount\n}",
-    "rust": "pub fn calculate_discount(price: f64, discount: f64) -> f64 {\n    price * discount\n}",
     "sql": "CREATE FUNCTION calculate_discount(price DECIMAL, discount DECIMAL) RETURNS DECIMAL BEGIN RETURN price; END;",
 }
 
@@ -133,7 +127,7 @@ def test_typescript_malformed_fails_verification():
     assert v["global_status"] == "failed"
 
 
-@pytest.mark.parametrize("lang", ["java", "c", "cpp", "csharp", "go", "php", "ruby", "swift", "kotlin", "rust", "sql"])
+@pytest.mark.parametrize("lang", ["java", "c", "cpp", "csharp", "sql"])
 def test_unsupported_languages_not_verified(lang):
     code = LANG_SAMPLES[lang]
     res = analyze(code, lang)

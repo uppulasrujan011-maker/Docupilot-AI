@@ -59,12 +59,6 @@ export const FALLBACK_LANGUAGES: LanguageCapability[] = [
   { id: "c", name: "C", extension: "c", parser_type: "regex_heuristic", has_real_parser: false, syntax_validation_capable: false, doc_format: "Doxygen", notes: "Generation only" },
   { id: "cpp", name: "C++", extension: "cpp", parser_type: "regex_heuristic", has_real_parser: false, syntax_validation_capable: false, doc_format: "Doxygen", notes: "Generation only" },
   { id: "csharp", name: "C#", extension: "cs", parser_type: "regex_heuristic", has_real_parser: false, syntax_validation_capable: false, doc_format: "XML Doc (///)", notes: "Generation only" },
-  { id: "go", name: "Go", extension: "go", parser_type: "regex_heuristic", has_real_parser: false, syntax_validation_capable: false, doc_format: "Go doc (//)", notes: "Generation only" },
-  { id: "php", name: "PHP", extension: "php", parser_type: "regex_heuristic", has_real_parser: false, syntax_validation_capable: false, doc_format: "PHPDoc", notes: "Generation only" },
-  { id: "ruby", name: "Ruby", extension: "rb", parser_type: "regex_heuristic", has_real_parser: false, syntax_validation_capable: false, doc_format: "YARD / RDoc (#)", notes: "Generation only" },
-  { id: "swift", name: "Swift", extension: "swift", parser_type: "regex_heuristic", has_real_parser: false, syntax_validation_capable: false, doc_format: "Swift doc (///)", notes: "Generation only" },
-  { id: "kotlin", name: "Kotlin", extension: "kt", parser_type: "regex_heuristic", has_real_parser: false, syntax_validation_capable: false, doc_format: "KDoc", notes: "Generation only" },
-  { id: "rust", name: "Rust", extension: "rs", parser_type: "regex_heuristic", has_real_parser: false, syntax_validation_capable: false, doc_format: "Rustdoc (///)", notes: "Generation only" },
   { id: "sql", name: "SQL", extension: "sql", parser_type: "regex_heuristic", has_real_parser: false, syntax_validation_capable: false, doc_format: "SQL doc (--)", notes: "Generation only" },
 ];
 
@@ -146,64 +140,6 @@ public:
         decimal surcharge = express ? baseRate * 0.5m : 0m;
         return baseRate + distanceFee + surcharge;
     }
-}`,
-
-  go: `package shipping
-
-import "errors"
-
-func CalculateShipping(weight float64, distance float64, express bool) (float64, error) {
-    if weight <= 0 || distance < 0 {
-        return 0, errors.New("invalid shipping inputs")
-    }
-    base := weight * 2.5
-    fee := distance * 0.4
-    if distance > 100 {
-        fee = distance * 0.8
-    }
-    surcharge := 0.0
-    if express {
-        surcharge = base * 0.5
-    }
-    return base + fee + surcharge, nil
-}`,
-
-  php: `<?php
-
-function calculateDiscount(float $price, float $discount): float {
-    if ($price <= 0 || $discount < 0 || $discount > 100) {
-        return 0.0;
-    }
-    return $price - ($price * $discount / 100.0);
-}`,
-
-  ruby: `def calculate_discount(price, discount)
-  return 0 if price <= 0 || discount < 0 || discount > 100
-  price - (price * discount / 100.0)
-end`,
-
-  swift: `func calculateShipping(weight: Double, distance: Double, express: Bool = false) -> Double {
-    guard weight > 0 && distance >= 0 else {
-        return 0.0
-    }
-    let base = weight * 2.5
-    let distanceFee = distance > 100 ? distance * 0.8 : distance * 0.4
-    let surcharge = express ? base * 0.5 : 0.0
-    return base + distanceFee + surcharge
-}`,
-
-  kotlin: `fun calculateDiscount(price: Double, discount: Double): Double {
-    if (price <= 0 || discount < 0.0 || discount > 100.0) {
-        return 0.0
-    }
-    return price - (price * discount / 100.0)
-}`,
-
-  rust: `pub fn calculate_discount(price: f64, discount: f64) -> Result<f64, &'static str> {
-    if price <= 0.0 || discount < 0.0 || discount > 100.0 {
-        return Err("Invalid price or discount percentage");
-    }
-    Ok(price - (price * discount / 100.0))
 }`,
 
   sql: `CREATE OR REPLACE FUNCTION calculate_discount(price DECIMAL(10,2), discount DECIMAL(5,2))
@@ -427,7 +363,8 @@ export default function App() {
       .then(d => {
         setConfig({ model: d.model, mode: d.mode, demo_mode: d.demo_mode });
         if (d.languages && Array.isArray(d.languages)) {
-          setLanguages(d.languages);
+          const excluded = new Set(["go", "php", "ruby", "swift", "kotlin", "rust"]);
+          setLanguages(d.languages.filter((l: LanguageCapability) => !excluded.has(l.id)));
         }
       })
       .catch(() => {});
@@ -1092,7 +1029,7 @@ export default function App() {
                       <span>{uploading ? "Uploading..." : "Upload File/ZIP"}</span>
                       <input
                         type="file"
-                        accept=".py,.js,.ts,.java,.go,.rs,.cpp,.c,.cs,.php,.rb,.swift,.kt,.sql,.zip"
+                        accept=".py,.js,.ts,.java,.cpp,.c,.cs,.sql,.zip"
                         onChange={handleFileUpload}
                         disabled={uploading || loading}
                       />

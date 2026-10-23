@@ -21,6 +21,11 @@ import sys
 import time
 from typing import Any
 
+# Ensure backend directory is in sys.path so 'app' imports resolve regardless of cwd
+backend_dir = os.path.dirname(os.path.abspath(__file__))
+if backend_dir not in sys.path:
+    sys.path.insert(0, backend_dir)
+
 from app.analyzer import analyze, compute_executable_fingerprint
 from app.languages import list_capabilities
 from app.main import generate_python_documentation, mock_documentation

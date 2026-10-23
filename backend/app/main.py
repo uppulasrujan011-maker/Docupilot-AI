@@ -930,12 +930,6 @@ ALLOWED_EXTENSIONS = {
     ".h": "c",
     ".hpp": "cpp",
     ".cs": "csharp",
-    ".go": "go",
-    ".php": "php",
-    ".rb": "ruby",
-    ".swift": "swift",
-    ".kt": "kotlin",
-    ".rs": "rust",
     ".sql": "sql",
 }
 
@@ -1028,7 +1022,7 @@ async def upload_file(file: UploadFile = File(...)):
                         detail="No valid source code files found in archive. Executables, dependencies, and sensitive files were safely excluded.",
                     )
 
-                entry_names = {"main.py", "app.py", "index.js", "index.ts", "main.go", "app.ts"}
+                entry_names = {"main.py", "app.py", "index.js", "index.ts", "app.ts"}
                 primary = None
                 for vf in valid_files:
                     if vf["filename"].lower() in entry_names:
