@@ -9,7 +9,7 @@ services:
       - key: OPENAI_MODEL
         value: gpt-4o-mini
       - key: FRONTEND_ORIGIN
-        sync: false
+        value: https://docupilot-ai-three.vercel.app
       - key: OPENAI_API_KEY
         sync: false
       - key: DATABASE_PATH

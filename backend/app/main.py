@@ -35,21 +35,31 @@ app = FastAPI(
     description="Agentic code documentation engine with human-in-the-loop review and multi-stage verification.",
 )
 
-raw_origin = os.getenv("FRONTEND_ORIGIN", "http://localhost:5173")
-origins = [o.strip() for o in raw_origin.split(",") if o.strip()]
-for dev_origin in [
+# Configure CORS policy for production Vercel frontend, preview domains, and local dev
+ALLOWED_ORIGINS = [
+    "https://docupilot-ai-three.vercel.app",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "http://localhost:5174",
     "http://127.0.0.1:5174",
-]:
-    if dev_origin not in origins:
-        origins.append(dev_origin)
+    "http://localhost:3000",
+]
+
+# Read optional environment overrides (comma-separated, clean whitespace & trailing slashes)
+env_origins = [
+    o.strip().rstrip("/")
+    for o in os.getenv("FRONTEND_ORIGIN", "").split(",")
+    if o.strip()
+]
+for origin in env_origins:
+    if origin not in ALLOWED_ORIGINS:
+        ALLOWED_ORIGINS.append(origin)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins if "*" not in origins else ["*"],
-    allow_credentials=False,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_origin_regex=r"^https:\/\/([a-zA-Z0-9_-]+\.)?vercel\.app$",
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
