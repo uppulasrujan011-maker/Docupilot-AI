@@ -6,10 +6,14 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
-      - key: OPENAI_MODEL
-        value: gpt-4o-mini
+      - key: GEMINI_MODEL
+        value: gemini-3.5-flash
+      - key: LLM_PROVIDER
+        value: gemini
       - key: FRONTEND_ORIGIN
         value: https://docupilot-ai-three.vercel.app
+      - key: GEMINI_API_KEY
+        sync: false
       - key: OPENAI_API_KEY
         sync: false
       - key: DATABASE_PATH

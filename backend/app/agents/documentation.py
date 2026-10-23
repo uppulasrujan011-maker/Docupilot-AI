@@ -59,7 +59,7 @@ def get_active_provider() -> str:
 def get_configured_model() -> str:
     provider = get_active_provider()
     if provider == "gemini":
-        return os.getenv("GEMINI_MODEL", "").strip() or "gemini-3.8-flash"
+        return os.getenv("GEMINI_MODEL", "").strip() or "gemini-3.5-flash"
     if provider == "openai":
         return os.getenv("OPENAI_MODEL", "").strip() or "gpt-4o-mini"
     return "mock-engine"
@@ -247,7 +247,7 @@ class DocumentationGenerationAgent:
                 "mock-engine",
             )
 
-        model = os.getenv("GEMINI_MODEL", "").strip() or "gemini-3.8-flash"
+        model = os.getenv("GEMINI_MODEL", "").strip() or "gemini-3.5-flash"
 
         try:
             from google import genai

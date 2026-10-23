@@ -116,7 +116,7 @@ def get_configured_model() -> str:
     """Retrieve the model for the active provider as single source of truth."""
     provider = get_active_provider()
     if provider == "gemini":
-        return os.getenv("GEMINI_MODEL", "").strip() or "gemini-3.8-flash"
+        return os.getenv("GEMINI_MODEL", "").strip() or "gemini-3.5-flash"
     if provider == "openai":
         return os.getenv("OPENAI_MODEL", "").strip() or "gpt-4o-mini"
     return "mock-engine"
@@ -681,7 +681,7 @@ def generate_with_gemini(
             "mock-engine",
         )
 
-    model = os.getenv("GEMINI_MODEL", "").strip() or "gemini-3.8-flash"
+    model = os.getenv("GEMINI_MODEL", "").strip() or "gemini-3.5-flash"
 
     try:
         from google import genai

@@ -224,7 +224,7 @@ Respond in concise JSON with:
                 from google import genai
                 from google.genai import types
                 client = genai.Client(api_key=key)
-                model = os.getenv("GEMINI_MODEL", "").strip() or "gemini-3.8-flash"
+                model = os.getenv("GEMINI_MODEL", "").strip() or "gemini-3.5-flash"
                 resp = client.models.generate_content(
                     model=model,
                     contents=prompt,
