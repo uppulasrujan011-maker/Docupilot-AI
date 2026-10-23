@@ -37,7 +37,7 @@ import {
   FileArchive,
 } from "lucide-react";
 
-const API = (import.meta.env.VITE_API_URL || "http://localhost:8000").replace(/\/$/, "");
+const API = (import.meta.env.VITE_API_URL || "https://docupilot-ai-3.onrender.com").replace(/\/$/, "");
 
 export interface LanguageCapability {
   id: string;
@@ -367,7 +367,7 @@ export default function App() {
           setLanguages(d.languages.filter((l: LanguageCapability) => !excluded.has(l.id)));
         }
       })
-      .catch(() => {});
+      .catch(() => { });
 
     refreshHistory();
   }, []);
@@ -665,10 +665,10 @@ export default function App() {
               {navTab === "workspace"
                 ? "Code Documentation Workspace"
                 : navTab === "history"
-                ? "Audit Trail & Reviews"
-                : navTab === "languages"
-                ? "Language Capability Registry"
-                : "Multi-Agent System & Central Orchestrator"}
+                  ? "Audit Trail & Reviews"
+                  : navTab === "languages"
+                    ? "Language Capability Registry"
+                    : "Multi-Agent System & Central Orchestrator"}
             </span>
           </div>
 
@@ -692,15 +692,15 @@ export default function App() {
               {navTab === "workspace"
                 ? "Context-Aware Code Documentation"
                 : navTab === "history"
-                ? "Audit History & Review Records"
-                : "Central Language Capability Registry"}
+                  ? "Audit History & Review Records"
+                  : "Central Language Capability Registry"}
             </h1>
             <p>
               {navTab === "workspace"
                 ? "Parse real AST structures, generate crystal-clear docstrings, inspect line-by-line diffs, and approve or reject with permanent SQLite audit evidence."
                 : navTab === "history"
-                ? "Inspect complete records of previous generation runs, reviewer approvals, rejection reasons, and verification diagnostics."
-                : "Transparent overview of parser engines, compiler syntax verification capabilities, and documentation standards across all 14 supported languages."}
+                  ? "Inspect complete records of previous generation runs, reviewer approvals, rejection reasons, and verification diagnostics."
+                  : "Transparent overview of parser engines, compiler syntax verification capabilities, and documentation standards across all 14 supported languages."}
             </p>
           </div>
 
@@ -814,9 +814,8 @@ export default function App() {
                 </div>
 
                 <div
-                  className={`step-item ${
-                    isApproved ? "completed" : isRejected ? "failed" : isPendingReview ? "active" : ""
-                  }`}
+                  className={`step-item ${isApproved ? "completed" : isRejected ? "failed" : isPendingReview ? "active" : ""
+                    }`}
                 >
                   <div className="step-num">4</div>
                   <div className="step-details">
@@ -825,10 +824,10 @@ export default function App() {
                       {isApproved
                         ? "Approved by developer"
                         : isRejected
-                        ? "Rejected by developer"
-                        : isPendingReview
-                        ? "Awaiting human decision"
-                        : "Human-in-the-loop audit"}
+                          ? "Rejected by developer"
+                          : isPendingReview
+                            ? "Awaiting human decision"
+                            : "Human-in-the-loop audit"}
                     </span>
                   </div>
                 </div>
@@ -846,9 +845,8 @@ export default function App() {
                         <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
                           <b>Central Orchestrator · Multi-Agent Execution Trace</b>
                           <span
-                            className={`status-pill ${
-                              isApproved ? "passed" : isRejected ? "failed" : "warning"
-                            }`}
+                            className={`status-pill ${isApproved ? "passed" : isRejected ? "failed" : "warning"
+                              }`}
                           >
                             {generated.workflow_state || "AWAITING_APPROVAL"}
                           </span>
@@ -976,9 +974,8 @@ export default function App() {
                       <span>01 / SOURCE CODE INPUT</span>
                     </div>
                     <span
-                      className={`capability-pill ${
-                        activeCapability.syntax_validation_capable ? "verified" : "heuristic"
-                      }`}
+                      className={`capability-pill ${activeCapability.syntax_validation_capable ? "verified" : "heuristic"
+                        }`}
                       title={activeCapability.notes}
                     >
                       {activeCapability.syntax_validation_capable
@@ -1043,389 +1040,389 @@ export default function App() {
                     </button>
                   </div>
 
-                <div className="editor-wrapper">
-                  <textarea
-                    className="code-textarea"
-                    spellCheck={false}
-                    value={source}
-                    onChange={e => setSource(e.target.value)}
-                    aria-label="Source code"
-                    placeholder="Paste your source code here..."
-                  />
-                </div>
-
-                <div className="panel-footer">
-                  <span className="panel-hint">
-                    {source.length} characters · {source.split("\n").length} lines
-                  </span>
-                  <button
-                    className="btn-primary"
-                    disabled={loading || source.trim().length < 3 || approving || rejecting}
-                    onClick={generate}
-                  >
-                    {loading ? <LoaderCircle className="spin" size={16} /> : <Play size={15} />}
-                    <span>{loading ? "Analyzing AST & Generating..." : "Generate Documentation"}</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Panel 2: Review & Verification Workspace */}
-              <div className="card-panel">
-                <div className="panel-header">
-                  <div className="panel-heading">
-                    <Bot size={16} />
-                    <span>02 / REVIEW & VERIFICATION</span>
+                  <div className="editor-wrapper">
+                    <textarea
+                      className="code-textarea"
+                      spellCheck={false}
+                      value={source}
+                      onChange={e => setSource(e.target.value)}
+                      aria-label="Source code"
+                      placeholder="Paste your source code here..."
+                    />
                   </div>
-                  <span
-                    className="status-badge"
-                    style={{
-                      backgroundColor: !generated
-                        ? "#F0F2F7"
-                        : isPendingReview
-                        ? "var(--warning-light)"
-                        : isApproved
-                        ? "var(--success-light)"
-                        : "var(--error-light)",
-                      color: !generated
-                        ? "var(--text-secondary)"
-                        : isPendingReview
-                        ? "var(--warning)"
-                        : isApproved
-                        ? "var(--success)"
-                        : "var(--error)",
-                    }}
-                  >
-                    {!generated
-                      ? "AWAITING INPUT"
-                      : isPendingReview
-                      ? "PENDING REVIEW"
-                      : isApproved
-                      ? "APPROVED"
-                      : "REJECTED"}
-                  </span>
+
+                  <div className="panel-footer">
+                    <span className="panel-hint">
+                      {source.length} characters · {source.split("\n").length} lines
+                    </span>
+                    <button
+                      className="btn-primary"
+                      disabled={loading || source.trim().length < 3 || approving || rejecting}
+                      onClick={generate}
+                    >
+                      {loading ? <LoaderCircle className="spin" size={16} /> : <Play size={15} />}
+                      <span>{loading ? "Analyzing AST & Generating..." : "Generate Documentation"}</span>
+                    </button>
+                  </div>
                 </div>
 
-                {!generated ? (
-                  <div className="empty-placeholder">
-                    <div className="empty-icon-circle">
-                      <WandSparkles size={24} />
+                {/* Panel 2: Review & Verification Workspace */}
+                <div className="card-panel">
+                  <div className="panel-header">
+                    <div className="panel-heading">
+                      <Bot size={16} />
+                      <span>02 / REVIEW & VERIFICATION</span>
                     </div>
-                    <h3>Documentation Proposal</h3>
-                    <p>
-                      Click <b>Generate Documentation</b> to extract AST symbols and generate an editable, verifiable proposal.
-                    </p>
+                    <span
+                      className="status-badge"
+                      style={{
+                        backgroundColor: !generated
+                          ? "#F0F2F7"
+                          : isPendingReview
+                            ? "var(--warning-light)"
+                            : isApproved
+                              ? "var(--success-light)"
+                              : "var(--error-light)",
+                        color: !generated
+                          ? "var(--text-secondary)"
+                          : isPendingReview
+                            ? "var(--warning)"
+                            : isApproved
+                              ? "var(--success)"
+                              : "var(--error)",
+                      }}
+                    >
+                      {!generated
+                        ? "AWAITING INPUT"
+                        : isPendingReview
+                          ? "PENDING REVIEW"
+                          : isApproved
+                            ? "APPROVED"
+                            : "REJECTED"}
+                    </span>
                   </div>
-                ) : (
-                  <>
-                    {/* Meta Strip */}
-                    <div className="meta-strip">
-                      <div className="meta-item">
-                        <small>Language</small>
-                        <b>{generated.language}</b>
+
+                  {!generated ? (
+                    <div className="empty-placeholder">
+                      <div className="empty-icon-circle">
+                        <WandSparkles size={24} />
                       </div>
-                      <div className="meta-item">
-                        <small>Generator</small>
-                        <b>
-                          {generated.mode === "gemini"
-                            ? `Google Gemini (${generated.model})`
-                            : generated.mode === "openai"
-                            ? `OpenAI (${generated.model})`
-                            : "DocuPilot Demo Engine"}
-                        </b>
-                      </div>
-                      <div className="meta-item">
-                        <small>Parser Engine</small>
-                        <b>
-                          {generated.analysis?.parser_used === "python_ast"
-                            ? "Python AST"
-                            : generated.analysis?.parser_used === "esprima"
-                            ? "Esprima JS AST"
-                            : generated.analysis?.parser_used === "typescript_compiler"
-                            ? "TypeScript Compiler API"
-                            : "Regex Structural"}
-                        </b>
-                      </div>
+                      <h3>Documentation Proposal</h3>
+                      <p>
+                        Click <b>Generate Documentation</b> to extract AST symbols and generate an editable, verifiable proposal.
+                      </p>
                     </div>
-
-                    {/* Demo Mode Notice */}
-                    {generated.warning && (
-                      <div className="ui-alert warning" style={{ margin: "10px 20px" }}>
-                        <AlertTriangle size={15} />
-                        <span>{generated.warning}</span>
+                  ) : (
+                    <>
+                      {/* Meta Strip */}
+                      <div className="meta-strip">
+                        <div className="meta-item">
+                          <small>Language</small>
+                          <b>{generated.language}</b>
+                        </div>
+                        <div className="meta-item">
+                          <small>Generator</small>
+                          <b>
+                            {generated.mode === "gemini"
+                              ? `Google Gemini (${generated.model})`
+                              : generated.mode === "openai"
+                                ? `OpenAI (${generated.model})`
+                                : "DocuPilot Demo Engine"}
+                          </b>
+                        </div>
+                        <div className="meta-item">
+                          <small>Parser Engine</small>
+                          <b>
+                            {generated.analysis?.parser_used === "python_ast"
+                              ? "Python AST"
+                              : generated.analysis?.parser_used === "esprima"
+                                ? "Esprima JS AST"
+                                : generated.analysis?.parser_used === "typescript_compiler"
+                                  ? "TypeScript Compiler API"
+                                  : "Regex Structural"}
+                          </b>
+                        </div>
                       </div>
-                    )}
 
-                    {/* View Tabs */}
-                    <div className="workspace-tabs">
-                      <button
-                        className={`tab-button ${viewTab === "edit" ? "active" : ""}`}
-                        onClick={() => setViewTab("edit")}
-                      >
-                        <FileCode2 size={13} /> Proposed Code (Editable)
-                      </button>
-                      <button
-                        className={`tab-button ${viewTab === "diff" ? "active" : ""}`}
-                        onClick={() => setViewTab("diff")}
-                      >
-                        <GitCompare size={13} /> Diff Preview ({diffLines.filter(l => l.type === "add").length} additions)
-                      </button>
-                    </div>
-
-                    {/* Main Code View: Edit or Diff */}
-                    <div className="editor-wrapper">
-                      {viewTab === "edit" ? (
-                        <textarea
-                          id="proposed"
-                          className="code-textarea"
-                          spellCheck={false}
-                          value={edited}
-                          disabled={isApproved || isRejected}
-                          onChange={e => setEdited(e.target.value)}
-                        />
-                      ) : (
-                        <div className="diff-scroll-box">
-                          {diffLines.map((line, idx) => (
-                            <div key={idx} className={`diff-row ${line.type}`}>
-                              <span className="diff-num">{line.lineNum || ""}</span>
-                              <span className="diff-code">
-                                {line.type === "add" ? "+ " : line.type === "del" ? "- " : "  "}
-                                {line.text}
-                              </span>
-                            </div>
-                          ))}
+                      {/* Demo Mode Notice */}
+                      {generated.warning && (
+                        <div className="ui-alert warning" style={{ margin: "10px 20px" }}>
+                          <AlertTriangle size={15} />
+                          <span>{generated.warning}</span>
                         </div>
                       )}
-                    </div>
 
-                    {/* Inline Rejection Box */}
-                    {showRejectBox && (
-                      <div className="rejection-box">
-                        <label>State rejection reason (recorded in SQLite audit trail):</label>
-                        <input
-                          type="text"
-                          placeholder="e.g. Docstring missing edge case details..."
-                          value={rejectionReason}
-                          onChange={e => setRejectionReason(e.target.value)}
-                          autoFocus
-                        />
-                        <div className="rejection-box-actions">
-                          <button className="btn-secondary-sm" onClick={() => setShowRejectBox(false)}>
-                            Cancel
-                          </button>
-                          <button
-                            className="btn-reject"
-                            style={{ backgroundColor: "var(--error)", color: "#FFFFFF" }}
-                            disabled={rejecting}
-                            onClick={confirmReject}
-                          >
-                            {rejecting ? "Recording..." : "Confirm Rejection"}
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Actions: Approve / Reject / Download */}
-                    <div className="panel-footer">
-                      {isPendingReview ? (
-                        <>
-                          <button
-                            className="btn-reject"
-                            disabled={approving || rejecting || loading}
-                            onClick={() => setShowRejectBox(true)}
-                          >
-                            <X size={15} /> Reject
-                          </button>
-                          <button
-                            className="btn-approve"
-                            disabled={approving || rejecting || !edited.trim()}
-                            onClick={approve}
-                          >
-                            {approving ? (
-                              <LoaderCircle className="spin" size={16} />
-                            ) : (
-                              <Check size={16} />
-                            )}
-                            <span>{approving ? "Running verification..." : "Approve & Verify"}</span>
-                          </button>
-                        </>
-                      ) : isApproved ? (
-                        <button className="btn-download" onClick={downloadApprovedCode}>
-                          <ArrowDownToLine size={15} /> Download Approved Code ({language})
+                      {/* View Tabs */}
+                      <div className="workspace-tabs">
+                        <button
+                          className={`tab-button ${viewTab === "edit" ? "active" : ""}`}
+                          onClick={() => setViewTab("edit")}
+                        >
+                          <FileCode2 size={13} /> Proposed Code (Editable)
                         </button>
-                      ) : (
-                        <span className="panel-hint">Proposal was rejected. Original source remains unchanged.</span>
-                      )}
-                    </div>
-
-                    {/* Quality Scorecard (Visible during Review & Approval) */}
-                    {(verification?.quality_score || generated?.quality_score) && (
-                      <div className="quality-card">
-                        <div className="quality-header">
-                          <div className="quality-heading">
-                            <Sparkles size={16} style={{ color: "var(--accent-primary)" }} />
-                            <span>Documentation Quality Scorecard</span>
-                          </div>
-                          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                            <b style={{ fontSize: "16px", color: "var(--text-primary)" }}>
-                              {(verification?.quality_score || generated?.quality_score)?.overall_score} / 100
-                            </b>
-                            <span
-                              className={`grade-badge ${((verification?.quality_score || generated?.quality_score)?.grade || "")
-                                .toLowerCase()
-                                .replace("+", "-plus")
-                                .replace(" ", "-")}`}
-                            >
-                              Grade: {(verification?.quality_score || generated?.quality_score)?.grade}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="quality-breakdown-grid">
-                          {(verification?.quality_score || generated?.quality_score)?.breakdown.map((item, idx) => (
-                            <div key={idx} className="criterion-pill">
-                              <small>{item.criterion}</small>
-                              <b>
-                                {item.earned} / {item.weight} pts
-                              </b>
-                              <span
-                                style={{
-                                  fontSize: "10px",
-                                  fontWeight: 600,
-                                  color:
-                                    item.status === "passed"
-                                      ? "var(--success)"
-                                      : item.status === "warning"
-                                      ? "var(--warning)"
-                                      : "var(--error)",
-                                }}
-                              >
-                                {item.status.toUpperCase()}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-
-                        {(verification?.quality_score || generated?.quality_score)?.findings?.length ? (
-                          <div className="findings-list">
-                            <b>AST Evidence & Findings:</b>
-                            <ul>
-                              {(verification?.quality_score || generated?.quality_score)?.findings.map((f, i) => (
-                                <li key={i}>{f}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        ) : null}
-
-                        <div className="quality-disclaimer">
-                          {(verification?.quality_score || generated?.quality_score)?.disclaimer}
-                        </div>
+                        <button
+                          className={`tab-button ${viewTab === "diff" ? "active" : ""}`}
+                          onClick={() => setViewTab("diff")}
+                        >
+                          <GitCompare size={13} /> Diff Preview ({diffLines.filter(l => l.type === "add").length} additions)
+                        </button>
                       </div>
-                    )}
 
-                    {/* Code Preservation Evidence (AST Fingerprinting) */}
-                    {verification && (
-                      <div className="fingerprint-card">
-                        <div className="fingerprint-header">
-                          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                            <ShieldCheck size={15} style={{ color: "var(--success)" }} />
-                            <b>Code Preservation Evidence (AST Fingerprint)</b>
-                          </div>
-                          {verification.checks.find(c => c.name === "Structural Consistency")?.status === "passed" ? (
-                            <span className="pill-check passed">100% Executable Statements Preserved</span>
-                          ) : (
-                            <span className="pill-check failed">Executable Statements Modified</span>
-                          )}
-                        </div>
-
-                        {verification.checks.find(c => c.fingerprint_comparison)?.fingerprint_comparison && (
-                          <div className="fingerprint-hashes">
-                            <span>
-                              Original AST:{" "}
-                              <b>
-                                {
-                                  verification.checks.find(c => c.fingerprint_comparison)
-                                    ?.fingerprint_comparison?.original_fingerprint
-                                }
-                              </b>
-                            </span>
-                            <span>
-                              Proposed AST:{" "}
-                              <b>
-                                {
-                                  verification.checks.find(c => c.fingerprint_comparison)
-                                    ?.fingerprint_comparison?.proposed_fingerprint
-                                }
-                              </b>
-                            </span>
-                            <span>
-                              Matches:{" "}
-                              <b>
-                                {verification.checks.find(c => c.fingerprint_comparison)
-                                  ?.fingerprint_comparison?.matches
-                                  ? "TRUE (Statements Identical)"
-                                  : "FALSE (Mutation Detected)"}
-                              </b>
-                            </span>
+                      {/* Main Code View: Edit or Diff */}
+                      <div className="editor-wrapper">
+                        {viewTab === "edit" ? (
+                          <textarea
+                            id="proposed"
+                            className="code-textarea"
+                            spellCheck={false}
+                            value={edited}
+                            disabled={isApproved || isRejected}
+                            onChange={e => setEdited(e.target.value)}
+                          />
+                        ) : (
+                          <div className="diff-scroll-box">
+                            {diffLines.map((line, idx) => (
+                              <div key={idx} className={`diff-row ${line.type}`}>
+                                <span className="diff-num">{line.lineNum || ""}</span>
+                                <span className="diff-code">
+                                  {line.type === "add" ? "+ " : line.type === "del" ? "- " : "  "}
+                                  {line.text}
+                                </span>
+                              </div>
+                            ))}
                           </div>
                         )}
-
-                        <div style={{ fontSize: "10px", color: "var(--text-tertiary)", marginTop: "4px" }}>
-                          Static syntax parsing and AST fingerprinting guarantee that non-comment executable statement
-                          structures are identical. Passing static checks does not claim or prove dynamic runtime
-                          behavioral equivalence.
-                        </div>
                       </div>
-                    )}
 
-                    {/* Verification Cards Container */}
-                    {verification && (
-                      <div className="verification-container">
-                        <div className="verification-header">
-                          <div className={`verification-heading ${verification.passed ? "passed" : "failed"}`}>
-                            {verification.passed ? <ShieldCheck size={18} /> : <ShieldAlert size={18} />}
-                            <span>Verification Pipeline</span>
+                      {/* Inline Rejection Box */}
+                      {showRejectBox && (
+                        <div className="rejection-box">
+                          <label>State rejection reason (recorded in SQLite audit trail):</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Docstring missing edge case details..."
+                            value={rejectionReason}
+                            onChange={e => setRejectionReason(e.target.value)}
+                            autoFocus
+                          />
+                          <div className="rejection-box-actions">
+                            <button className="btn-secondary-sm" onClick={() => setShowRejectBox(false)}>
+                              Cancel
+                            </button>
+                            <button
+                              className="btn-reject"
+                              style={{ backgroundColor: "var(--error)", color: "#FFFFFF" }}
+                              disabled={rejecting}
+                              onClick={confirmReject}
+                            >
+                              {rejecting ? "Recording..." : "Confirm Rejection"}
+                            </button>
                           </div>
-                          <span className={`global-status-badge ${verification.global_status}`}>
-                            {verification.global_status.replaceAll("_", " ")}
-                          </span>
                         </div>
+                      )}
 
-                        <div className="checks-cards-grid">
-                          {verification.checks.map((chk, i) => (
-                            <div key={i} className="check-box">
-                              <div className="check-box-top">
-                                <span className="check-title">
-                                  {chk.status === "passed" ? (
-                                    <Check size={14} style={{ color: "var(--success)" }} />
-                                  ) : chk.status === "failed" ? (
-                                    <X size={14} style={{ color: "var(--error)" }} />
-                                  ) : (
-                                    <AlertCircle size={14} style={{ color: "var(--text-tertiary)" }} />
-                                  )}
-                                  <span>{chk.name}</span>
-                                </span>
-                                <span className={`pill-check ${chk.status}`}>
-                                  {chk.status.replaceAll("_", " ")}
-                                </span>
-                              </div>
-                              <div className="check-desc">{chk.details}</div>
-                              <div className="check-footer-info">
-                                <span>Tool: {chk.tool}</span>
-                                {chk.duration_ms > 0 && <span>{chk.duration_ms}ms</span>}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-
-                        <div className="verification-note">{verification.note}</div>
+                      {/* Actions: Approve / Reject / Download */}
+                      <div className="panel-footer">
+                        {isPendingReview ? (
+                          <>
+                            <button
+                              className="btn-reject"
+                              disabled={approving || rejecting || loading}
+                              onClick={() => setShowRejectBox(true)}
+                            >
+                              <X size={15} /> Reject
+                            </button>
+                            <button
+                              className="btn-approve"
+                              disabled={approving || rejecting || !edited.trim()}
+                              onClick={approve}
+                            >
+                              {approving ? (
+                                <LoaderCircle className="spin" size={16} />
+                              ) : (
+                                <Check size={16} />
+                              )}
+                              <span>{approving ? "Running verification..." : "Approve & Verify"}</span>
+                            </button>
+                          </>
+                        ) : isApproved ? (
+                          <button className="btn-download" onClick={downloadApprovedCode}>
+                            <ArrowDownToLine size={15} /> Download Approved Code ({language})
+                          </button>
+                        ) : (
+                          <span className="panel-hint">Proposal was rejected. Original source remains unchanged.</span>
+                        )}
                       </div>
-                    )}
-                  </>
-                )}
+
+                      {/* Quality Scorecard (Visible during Review & Approval) */}
+                      {(verification?.quality_score || generated?.quality_score) && (
+                        <div className="quality-card">
+                          <div className="quality-header">
+                            <div className="quality-heading">
+                              <Sparkles size={16} style={{ color: "var(--accent-primary)" }} />
+                              <span>Documentation Quality Scorecard</span>
+                            </div>
+                            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                              <b style={{ fontSize: "16px", color: "var(--text-primary)" }}>
+                                {(verification?.quality_score || generated?.quality_score)?.overall_score} / 100
+                              </b>
+                              <span
+                                className={`grade-badge ${((verification?.quality_score || generated?.quality_score)?.grade || "")
+                                  .toLowerCase()
+                                  .replace("+", "-plus")
+                                  .replace(" ", "-")}`}
+                              >
+                                Grade: {(verification?.quality_score || generated?.quality_score)?.grade}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="quality-breakdown-grid">
+                            {(verification?.quality_score || generated?.quality_score)?.breakdown.map((item, idx) => (
+                              <div key={idx} className="criterion-pill">
+                                <small>{item.criterion}</small>
+                                <b>
+                                  {item.earned} / {item.weight} pts
+                                </b>
+                                <span
+                                  style={{
+                                    fontSize: "10px",
+                                    fontWeight: 600,
+                                    color:
+                                      item.status === "passed"
+                                        ? "var(--success)"
+                                        : item.status === "warning"
+                                          ? "var(--warning)"
+                                          : "var(--error)",
+                                  }}
+                                >
+                                  {item.status.toUpperCase()}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+
+                          {(verification?.quality_score || generated?.quality_score)?.findings?.length ? (
+                            <div className="findings-list">
+                              <b>AST Evidence & Findings:</b>
+                              <ul>
+                                {(verification?.quality_score || generated?.quality_score)?.findings.map((f, i) => (
+                                  <li key={i}>{f}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          ) : null}
+
+                          <div className="quality-disclaimer">
+                            {(verification?.quality_score || generated?.quality_score)?.disclaimer}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Code Preservation Evidence (AST Fingerprinting) */}
+                      {verification && (
+                        <div className="fingerprint-card">
+                          <div className="fingerprint-header">
+                            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                              <ShieldCheck size={15} style={{ color: "var(--success)" }} />
+                              <b>Code Preservation Evidence (AST Fingerprint)</b>
+                            </div>
+                            {verification.checks.find(c => c.name === "Structural Consistency")?.status === "passed" ? (
+                              <span className="pill-check passed">100% Executable Statements Preserved</span>
+                            ) : (
+                              <span className="pill-check failed">Executable Statements Modified</span>
+                            )}
+                          </div>
+
+                          {verification.checks.find(c => c.fingerprint_comparison)?.fingerprint_comparison && (
+                            <div className="fingerprint-hashes">
+                              <span>
+                                Original AST:{" "}
+                                <b>
+                                  {
+                                    verification.checks.find(c => c.fingerprint_comparison)
+                                      ?.fingerprint_comparison?.original_fingerprint
+                                  }
+                                </b>
+                              </span>
+                              <span>
+                                Proposed AST:{" "}
+                                <b>
+                                  {
+                                    verification.checks.find(c => c.fingerprint_comparison)
+                                      ?.fingerprint_comparison?.proposed_fingerprint
+                                  }
+                                </b>
+                              </span>
+                              <span>
+                                Matches:{" "}
+                                <b>
+                                  {verification.checks.find(c => c.fingerprint_comparison)
+                                    ?.fingerprint_comparison?.matches
+                                    ? "TRUE (Statements Identical)"
+                                    : "FALSE (Mutation Detected)"}
+                                </b>
+                              </span>
+                            </div>
+                          )}
+
+                          <div style={{ fontSize: "10px", color: "var(--text-tertiary)", marginTop: "4px" }}>
+                            Static syntax parsing and AST fingerprinting guarantee that non-comment executable statement
+                            structures are identical. Passing static checks does not claim or prove dynamic runtime
+                            behavioral equivalence.
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Verification Cards Container */}
+                      {verification && (
+                        <div className="verification-container">
+                          <div className="verification-header">
+                            <div className={`verification-heading ${verification.passed ? "passed" : "failed"}`}>
+                              {verification.passed ? <ShieldCheck size={18} /> : <ShieldAlert size={18} />}
+                              <span>Verification Pipeline</span>
+                            </div>
+                            <span className={`global-status-badge ${verification.global_status}`}>
+                              {verification.global_status.replaceAll("_", " ")}
+                            </span>
+                          </div>
+
+                          <div className="checks-cards-grid">
+                            {verification.checks.map((chk, i) => (
+                              <div key={i} className="check-box">
+                                <div className="check-box-top">
+                                  <span className="check-title">
+                                    {chk.status === "passed" ? (
+                                      <Check size={14} style={{ color: "var(--success)" }} />
+                                    ) : chk.status === "failed" ? (
+                                      <X size={14} style={{ color: "var(--error)" }} />
+                                    ) : (
+                                      <AlertCircle size={14} style={{ color: "var(--text-tertiary)" }} />
+                                    )}
+                                    <span>{chk.name}</span>
+                                  </span>
+                                  <span className={`pill-check ${chk.status}`}>
+                                    {chk.status.replaceAll("_", " ")}
+                                  </span>
+                                </div>
+                                <div className="check-desc">{chk.details}</div>
+                                <div className="check-footer-info">
+                                  <span>Tool: {chk.tool}</span>
+                                  {chk.duration_ms > 0 && <span>{chk.duration_ms}ms</span>}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="verification-note">{verification.note}</div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
-            </div>
-          </>
-        )}
+            </>
+          )}
 
           {/* View: Dedicated Audit History */}
           {navTab === "history" && (
@@ -1550,9 +1547,8 @@ export default function App() {
                         </td>
                         <td>
                           <span
-                            className={`capability-pill ${
-                              lang.syntax_validation_capable ? "verified" : "heuristic"
-                            }`}
+                            className={`capability-pill ${lang.syntax_validation_capable ? "verified" : "heuristic"
+                              }`}
                           >
                             {lang.syntax_validation_capable ? "Full AST Verified" : "Not Verified (No Local Parser)"}
                           </span>
