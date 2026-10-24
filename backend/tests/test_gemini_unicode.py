@@ -488,3 +488,28 @@ def test_sqlite_unicode_roundtrip_preservation(tmp_path, monkeypatch):
     assert "—" in saved["proposed_code"]
     assert "“workflow”" in str(saved["analysis"])
 
+
+def test_store_resilient_to_readonly_database(tmp_path, monkeypatch):
+    """Verify store recovers safely when running in read-only filesystems (e.g. Vercel Serverless)."""
+    import os
+    import sqlite3
+    from app import store
+
+    ro_db = str(tmp_path / "ro_test.db")
+    con = sqlite3.connect(ro_db)
+    con.execute("CREATE TABLE runs (id TEXT PRIMARY KEY)")
+    con.commit()
+    con.close()
+    os.chmod(ro_db, 0o444)
+
+    monkeypatch.setenv("DATABASE_PATH", ro_db)
+    run_id = store.save_run(
+        language="python",
+        original="def example(): pass",
+        proposed="def example(): pass",
+        analysis={},
+        mode="demo_mock",
+    )
+    assert run_id is not None
+
+

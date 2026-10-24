@@ -13,13 +13,76 @@ from datetime import datetime, timezone
 from typing import Any, Optional
 
 
+import logging
+import shutil
+import tempfile
+
+logger = logging.getLogger("docupilot.store")
+
+
+def is_path_writable(path: str) -> bool:
+    """Check if a file or its target directory is writable."""
+    try:
+        if os.path.exists(path):
+            return os.access(path, os.W_OK)
+        parent = os.path.dirname(os.path.abspath(path))
+        if not os.path.exists(parent):
+            return False
+        return os.access(parent, os.W_OK)
+    except Exception:
+        return False
+
+
 def db_path() -> str:
-    return os.getenv("DATABASE_PATH", "./docupilot.db")
+    """Determine the database path, ensuring write access across serverless and container runtimes."""
+    # 1. If explicit DATABASE_PATH is provided, always honor it
+    env_path = os.getenv("DATABASE_PATH")
+    if env_path:
+        return env_path
+
+    # 2. Check for Serverless environments where root filesystem is read-only (e.g. Vercel, AWS Lambda)
+    is_serverless = bool(
+        os.getenv("VERCEL")
+        or os.getenv("AWS_LAMBDA_FUNCTION_NAME")
+        or os.getenv("FUNCTION_TARGET")
+        or os.getenv("K_SERVICE")
+    )
+
+    default_path = "./docupilot.db"
+    if not is_serverless and is_path_writable(default_path):
+        return default_path
+
+    # 3. For Serverless / read-only filesystems, use the system temporary directory (/tmp)
+    tmp_path = os.path.join(tempfile.gettempdir(), "docupilot.db")
+    if not os.path.exists(tmp_path):
+        for candidate in ["./docupilot.db", "../docupilot.db", "backend/docupilot.db"]:
+            if os.path.exists(candidate):
+                try:
+                    shutil.copyfile(candidate, tmp_path)
+                    break
+                except Exception as copy_err:
+                    logger.warning("Could not copy seed database from %s to %s: %s", candidate, tmp_path, copy_err)
+
+    if is_path_writable(tmp_path):
+        return tmp_path
+
+    # 4. Ultimate fallback: in-memory database
+    return ":memory:"
 
 
 @contextmanager
 def connect():
-    con = sqlite3.connect(db_path(), timeout=10)
+    path = db_path()
+    try:
+        con = sqlite3.connect(path, timeout=10)
+    except sqlite3.OperationalError:
+        # Fallback to temp directory or in-memory
+        fallback = os.path.join(tempfile.gettempdir(), "docupilot.db")
+        try:
+            con = sqlite3.connect(fallback, timeout=10)
+        except Exception:
+            con = sqlite3.connect(":memory:", timeout=10)
+
     con.row_factory = sqlite3.Row
     try:
         with con:
@@ -29,43 +92,46 @@ def connect():
 
 
 def init_db():
-    with connect() as con:
-        con.execute("""
-            CREATE TABLE IF NOT EXISTS runs (
-                id TEXT PRIMARY KEY,
-                created_at TEXT NOT NULL,
-                updated_at TEXT,
-                reviewed_at TEXT,
-                language TEXT NOT NULL,
-                status TEXT NOT NULL,
-                original_code TEXT NOT NULL,
-                proposed_code TEXT NOT NULL,
-                final_code TEXT,
-                analysis_json TEXT NOT NULL,
-                verification_json TEXT,
-                mode TEXT NOT NULL,
-                model TEXT,
-                rejection_reason TEXT
-            )
-        """)
+    try:
+        with connect() as con:
+            con.execute("""
+                CREATE TABLE IF NOT EXISTS runs (
+                    id TEXT PRIMARY KEY,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT,
+                    reviewed_at TEXT,
+                    language TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    original_code TEXT NOT NULL,
+                    proposed_code TEXT NOT NULL,
+                    final_code TEXT,
+                    analysis_json TEXT NOT NULL,
+                    verification_json TEXT,
+                    mode TEXT NOT NULL,
+                    model TEXT,
+                    rejection_reason TEXT
+                )
+            """)
 
-        # Backward compatibility migration for existing SQLite files
-        existing_cols = {row["name"] for row in con.execute("PRAGMA table_info(runs)").fetchall()}
-        migrations = [
-            ("updated_at", "TEXT"),
-            ("reviewed_at", "TEXT"),
-            ("model", "TEXT"),
-            ("rejection_reason", "TEXT"),
-            ("workflow_state", "TEXT"),
-            ("agents_log_json", "TEXT"),
-            ("revision_count", "INTEGER"),
-        ]
-        for col_name, col_type in migrations:
-            if col_name not in existing_cols:
-                try:
-                    con.execute(f"ALTER TABLE runs ADD COLUMN {col_name} {col_type}")
-                except sqlite3.OperationalError:
-                    pass
+            # Backward compatibility migration for existing SQLite files
+            existing_cols = {row["name"] for row in con.execute("PRAGMA table_info(runs)").fetchall()}
+            migrations = [
+                ("updated_at", "TEXT"),
+                ("reviewed_at", "TEXT"),
+                ("model", "TEXT"),
+                ("rejection_reason", "TEXT"),
+                ("workflow_state", "TEXT"),
+                ("agents_log_json", "TEXT"),
+                ("revision_count", "INTEGER"),
+            ]
+            for col_name, col_type in migrations:
+                if col_name not in existing_cols:
+                    try:
+                        con.execute(f"ALTER TABLE runs ADD COLUMN {col_name} {col_type}")
+                    except sqlite3.OperationalError:
+                        pass
+    except Exception as exc:
+        logger.warning("Database init_db warning (read-only or in-memory fallback): %s", exc)
 
 
 def now_utc() -> str:
@@ -88,31 +154,45 @@ def save_run(
         run_id = str(uuid.uuid4())
     created = now_utc()
     agents_json = json.dumps(agents_log, ensure_ascii=False) if agents_log is not None else None
-    with connect() as con:
-        con.execute(
-            """
-            INSERT INTO runs (
-                id, created_at, updated_at, language, status,
-                original_code, proposed_code, analysis_json, mode, model,
-                workflow_state, agents_log_json, revision_count
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                run_id,
-                created,
-                created,
-                language,
-                "pending_review",
-                original,
-                proposed,
-                json.dumps(analysis, ensure_ascii=False),
-                mode,
-                model,
-                workflow_state,
-                agents_json,
-                revision_count,
-            ),
-        )
+
+    query = """
+        INSERT INTO runs (
+            id, created_at, updated_at, language, status,
+            original_code, proposed_code, analysis_json, mode, model,
+            workflow_state, agents_log_json, revision_count
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """
+    params = (
+        run_id,
+        created,
+        created,
+        language,
+        "pending_review",
+        original,
+        proposed,
+        json.dumps(analysis, ensure_ascii=False),
+        mode,
+        model,
+        workflow_state,
+        agents_json,
+        revision_count,
+    )
+
+    try:
+        with connect() as con:
+            con.execute(query, params)
+    except sqlite3.OperationalError as op_err:
+        logger.warning("SQLite save_run OperationalError: %s. Re-routing to writable temp directory...", op_err)
+        os.environ["DATABASE_PATH"] = os.path.join(tempfile.gettempdir(), f"docupilot_{uuid.uuid4().hex[:8]}.db")
+        try:
+            init_db()
+            with connect() as con:
+                con.execute(query, params)
+        except Exception as retry_err:
+            logger.error("Failed to persist run to SQLite fallback (%s). Generation completed successfully without persistent record.", retry_err)
+    except Exception as exc:
+        logger.error("Unexpected error persisting run (%s). Generation completed successfully.", exc)
+
     return run_id
 
 
