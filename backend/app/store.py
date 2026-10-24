@@ -87,7 +87,7 @@ def save_run(
     if not run_id:
         run_id = str(uuid.uuid4())
     created = now_utc()
-    agents_json = json.dumps(agents_log) if agents_log is not None else None
+    agents_json = json.dumps(agents_log, ensure_ascii=False) if agents_log is not None else None
     with connect() as con:
         con.execute(
             """
@@ -105,7 +105,7 @@ def save_run(
                 "pending_review",
                 original,
                 proposed,
-                json.dumps(analysis),
+                json.dumps(analysis, ensure_ascii=False),
                 mode,
                 model,
                 workflow_state,
@@ -141,7 +141,7 @@ def approve_run(run_id: str, final_code: str, verification: dict) -> Optional[di
             SET status = ?, workflow_state = 'COMPLETED', final_code = ?, verification_json = ?, reviewed_at = ?, updated_at = ?
             WHERE id = ? AND status = 'pending_review'
             """,
-            (new_status, final_code, json.dumps(verification), reviewed, reviewed, run_id),
+            (new_status, final_code, json.dumps(verification, ensure_ascii=False), reviewed, reviewed, run_id),
         )
     return get_run(run_id)
 

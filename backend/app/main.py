@@ -10,14 +10,32 @@ import io
 import logging
 import os
 import re
+import sys
+import traceback
 import zipfile
 from pathlib import Path
 from typing import Any, Optional
 
+# Enforce UTF-8 mode at the process level for standard streams and default file operations
+os.environ["PYTHONUTF8"] = "1"
+os.environ["PYTHONIOENCODING"] = "utf-8"
+
+for stream_name in ("stdout", "stderr", "stdin"):
+    stream = getattr(sys, stream_name, None)
+    if stream and hasattr(stream, "reconfigure"):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
+
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from openai import APIConnectionError, APIError, AuthenticationError, OpenAI, RateLimitError
+try:
+    from openai import APIConnectionError, APIError, AuthenticationError, OpenAI, RateLimitError
+except ImportError:
+    OpenAI = None
+    APIConnectionError = APIError = AuthenticationError = RateLimitError = Exception
 from pydantic import BaseModel, Field
 
 from . import store
@@ -27,6 +45,19 @@ from .verifier import verify
 from .orchestrator import Orchestrator
 
 logger = logging.getLogger("docupilot.api")
+
+
+def sanitize_error(message: str) -> str:
+    """Safely redact API keys and sensitive tokens from error descriptions."""
+    if not message:
+        return ""
+    text = str(message)
+    # Redact Google API keys (AIzaSy... or AQ....) and OpenAI keys (sk-...)
+    text = re.sub(r"AIzaSy[a-zA-Z0-9_\-]{33}", "[REDACTED_API_KEY]", text)
+    text = re.sub(r"AQ\.[a-zA-Z0-9_\-]{30,}", "[REDACTED_API_KEY]", text)
+    text = re.sub(r"sk-[a-zA-Z0-9_\-]{20,}", "[REDACTED_API_KEY]", text)
+    text = re.sub(r"key=([^&\s]+)", "key=[REDACTED_API_KEY]", text)
+    return text
 
 load_dotenv()
 app = FastAPI(
@@ -38,6 +69,7 @@ app = FastAPI(
 # Configure CORS policy for production Vercel frontend, preview domains, and local dev
 ALLOWED_ORIGINS = [
     "https://docupilot-ai-three.vercel.app",
+    "https://docupilot-ai-git-main-fursat1.vercel.app",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "http://localhost:5174",
@@ -89,17 +121,19 @@ class RejectRequest(BaseModel):
 
 def get_gemini_key() -> str:
     """Retrieve configured Gemini API key (supports GEMINI_API_KEY or GOOGLE_API_KEY)."""
-    return os.getenv("GEMINI_API_KEY", "").strip() or os.getenv("GOOGLE_API_KEY", "").strip()
+    raw = os.getenv("GEMINI_API_KEY", "").strip() or os.getenv("GOOGLE_API_KEY", "").strip()
+    return raw.strip("'\"")
 
 
 def get_openai_key() -> str:
     """Retrieve configured OpenAI API key."""
-    return os.getenv("OPENAI_API_KEY", "").strip()
+    raw = os.getenv("OPENAI_API_KEY", "").strip()
+    return raw.strip("'\"")
 
 
 def get_active_provider() -> str:
     """Determine the active AI provider: 'gemini', 'openai', or 'demo_mock'."""
-    explicit_provider = os.getenv("LLM_PROVIDER", "").strip().lower()
+    explicit_provider = os.getenv("LLM_PROVIDER", "").strip().lower().strip("'\"")
     if explicit_provider == "gemini" and get_gemini_key():
         return "gemini"
     if explicit_provider == "openai" and get_openai_key():
@@ -116,9 +150,11 @@ def get_configured_model() -> str:
     """Retrieve the model for the active provider as single source of truth."""
     provider = get_active_provider()
     if provider == "gemini":
-        return os.getenv("GEMINI_MODEL", "").strip() or "gemini-3.5-flash"
+        raw = os.getenv("GEMINI_MODEL", "").strip().strip("'\"")
+        return raw or "gemini-3.8-flash"
     if provider == "openai":
-        return os.getenv("OPENAI_MODEL", "").strip() or "gpt-4o-mini"
+        raw = os.getenv("OPENAI_MODEL", "").strip().strip("'\"")
+        return raw or "gpt-4o-mini"
     return "mock-engine"
 
 
@@ -681,7 +717,7 @@ def generate_with_gemini(
             "mock-engine",
         )
 
-    model = os.getenv("GEMINI_MODEL", "").strip() or "gemini-3.5-flash"
+    model = os.getenv("GEMINI_MODEL", "").strip().strip("'\"") or "gemini-3.8-flash"
 
     try:
         from google import genai
@@ -693,13 +729,17 @@ def generate_with_gemini(
         ) from imp_err
 
     prompt = build_generation_prompt(code, language, analysis, doc_style, revision_feedback)
+    if isinstance(prompt, bytes):
+        prompt_str = prompt.decode("utf-8", errors="replace")
+    else:
+        prompt_str = str(prompt)
 
     output = ""
     try:
         client = genai.Client(api_key=key)
         response = client.models.generate_content(
             model=model,
-            contents=prompt,
+            contents=prompt_str,
             config=types.GenerateContentConfig(
                 system_instruction="You are an expert code documentation assistant. Return only updated code with docstrings and comments without markdown backticks.",
                 temperature=0.2,
@@ -707,27 +747,62 @@ def generate_with_gemini(
         )
         output = response.text or ""
     except errors.APIError as api_err:
-        err_msg = str(api_err)
+        raw_msg = str(api_err)
+        clean_msg = sanitize_error(raw_msg)
         status_code = getattr(api_err, "code", None)
-        if status_code in (400, 401, 403) or "API_KEY_INVALID" in err_msg or "PERMISSION_DENIED" in err_msg:
+        clean_tb = sanitize_error(traceback.format_exc())
+        logger.error("Gemini API error (code=%s): %s\n%s", status_code, clean_msg, clean_tb)
+        if status_code in (400, 401, 403) or "API_KEY_INVALID" in raw_msg or "PERMISSION_DENIED" in raw_msg:
             raise HTTPException(
                 status_code=401,
-                detail=f"Google Gemini authentication failed. Invalid API key provided in configuration ({err_msg}).",
+                detail=f"Google Gemini authentication failed. Invalid API key provided in configuration ({clean_msg}).",
             ) from api_err
-        elif status_code == 429 or "RESOURCE_EXHAUSTED" in err_msg:
+        elif status_code == 404 or "NOT_FOUND" in raw_msg or "not found" in raw_msg.lower():
+            raise HTTPException(
+                status_code=404,
+                detail=f"Google Gemini model '{model}' is not supported or not available ({clean_msg}).",
+            ) from api_err
+        elif status_code == 429 or "RESOURCE_EXHAUSTED" in raw_msg:
             raise HTTPException(
                 status_code=429,
-                detail=f"Google Gemini rate limit or quota exceeded ({err_msg}). Please try again later.",
+                detail=f"Google Gemini rate limit or quota exceeded ({clean_msg}). Please try again later.",
+            ) from api_err
+        elif status_code == 503 or "UNAVAILABLE" in raw_msg:
+            raise HTTPException(
+                status_code=503,
+                detail=f"Google Gemini service is temporarily experiencing high demand ({clean_msg}). Please retry in a few moments.",
             ) from api_err
         else:
+            effective_code = status_code if (isinstance(status_code, int) and 400 <= status_code <= 599) else 502
             raise HTTPException(
-                status_code=502,
-                detail=f"Google Gemini API error: {err_msg}",
+                status_code=effective_code,
+                detail=f"Google Gemini API error: {clean_msg}",
             ) from api_err
+    except (UnicodeEncodeError, UnicodeDecodeError, UnicodeError) as u_err:
+        clean_err = sanitize_error(str(u_err))
+        clean_tb = sanitize_error(traceback.format_exc())
+        logger.error("Unicode error during Gemini documentation generation: %s\n%s", clean_err, clean_tb)
+        raise HTTPException(
+            status_code=422,
+            detail=f"Unicode encoding error during documentation processing: {clean_err}. Ensure input source code is valid UTF-8.",
+        ) from u_err
+    except (ConnectionError, TimeoutError) as conn_err:
+        clean_conn = sanitize_error(str(conn_err))
+        clean_tb = sanitize_error(traceback.format_exc())
+        logger.error("Network timeout/connection error communicating with Gemini API: %s\n%s", clean_conn, clean_tb)
+        raise HTTPException(
+            status_code=504,
+            detail=f"Network connection timeout communicating with Google Gemini API ({clean_conn}).",
+        ) from conn_err
+    except HTTPException:
+        raise
     except Exception as exc:
+        clean_exc = sanitize_error(str(exc))
+        clean_tb = sanitize_error(traceback.format_exc())
+        logger.error("Unexpected error in Gemini generation:\n%s", clean_tb)
         raise HTTPException(
             status_code=502,
-            detail=f"Google Gemini generation error: {exc}",
+            detail=f"Google Gemini generation error: {clean_exc}",
         ) from exc
 
     return strip_code_fences(output), "gemini", model
@@ -889,11 +964,23 @@ def stats():
 
 @app.post("/api/generate")
 def generate(req: GenerateRequest):
-    return orchestrator.process_code_generation(
-        code=req.code,
-        language=req.language,
-        doc_style=req.doc_style,
-    )
+    try:
+        return orchestrator.process_code_generation(
+            code=req.code,
+            language=req.language,
+            doc_style=req.doc_style,
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raw_tb = traceback.format_exc()
+        clean_tb = sanitize_error(raw_tb)
+        clean_msg = sanitize_error(str(exc))
+        logger.error("Unhandled exception in /api/generate pipeline:\n%s", clean_tb)
+        raise HTTPException(
+            status_code=502,
+            detail=f"Generation pipeline error: {clean_msg}",
+        ) from exc
 
 
 @app.post("/api/approve")

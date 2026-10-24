@@ -10,7 +10,9 @@ Enforces deterministic workflow transitions, concurrent independent review & val
 bounded single-revision policy on documentation defects, and human-in-the-loop approval gates.
 """
 
+import logging
 import time
+import traceback
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from enum import Enum
@@ -20,11 +22,13 @@ from fastapi import HTTPException
 from pydantic import BaseModel, Field
 
 from .agents.code_analysis import CodeAnalysisAgent, CodeAnalysisResult
-from .agents.documentation import DocumentationGenerationAgent, DocumentationResult
+from .agents.documentation import DocumentationGenerationAgent, DocumentationResult, sanitize_error
 from .agents.review import DocumentationReviewAgent, ReviewResult
 from .agents.validation import ValidationAgent, ValidationResult
 from .languages import SUPPORTED_LANGUAGES, get_language
 from . import store
+
+logger = logging.getLogger("docupilot.orchestrator")
 
 
 class WorkflowState(str, Enum):
@@ -122,15 +126,30 @@ class Orchestrator:
 
         # Step 2: State -> GENERATING (Documentation Generation Agent)
         current_state = WorkflowState.GENERATING
-        gen_res: DocumentationResult = self.doc_generation_agent.run(
-            code=code,
-            language=lang_clean,
-            analysis=analysis_res.analysis,
-            doc_style=doc_style_clean,
-            revision_feedback=None,
-            revision_number=0,
-        )
-        agent_executions["documentation_generation"] = gen_res.model_dump()
+        try:
+            gen_res: DocumentationResult = self.doc_generation_agent.run(
+                code=code,
+                language=lang_clean,
+                analysis=analysis_res.analysis,
+                doc_style=doc_style_clean,
+                revision_feedback=None,
+                revision_number=0,
+            )
+            agent_executions["documentation_generation"] = gen_res.model_dump()
+        except HTTPException as http_exc:
+            current_state = WorkflowState.FAILED
+            clean_detail = sanitize_error(str(http_exc.detail))
+            logger.error("Generation failed (HTTP %d): %s", http_exc.status_code, clean_detail)
+            raise HTTPException(status_code=http_exc.status_code, detail=clean_detail) from http_exc
+        except Exception as gen_err:
+            current_state = WorkflowState.FAILED
+            clean_tb = sanitize_error(traceback.format_exc())
+            clean_msg = sanitize_error(str(gen_err))
+            logger.error("Unhandled generation error in orchestrator:\n%s", clean_tb)
+            raise HTTPException(
+                status_code=502,
+                detail=f"Documentation generation error: {clean_msg}",
+            ) from gen_err
 
         if gen_res.status == "failed" or not gen_res.proposed_code.strip():
             current_state = WorkflowState.FAILED
@@ -161,15 +180,30 @@ class Orchestrator:
             # Execute exactly ONE bounded revision with actionable feedback
             revision_count = 1
             current_state = WorkflowState.GENERATING
-            revised_gen: DocumentationResult = self.doc_generation_agent.run(
-                code=code,
-                language=lang_clean,
-                analysis=analysis_res.analysis,
-                doc_style=doc_style_clean,
-                revision_feedback=review_res.actionable_feedback,
-                revision_number=1,
-            )
-            agent_executions["documentation_generation_revision_1"] = revised_gen.model_dump()
+            try:
+                revised_gen: DocumentationResult = self.doc_generation_agent.run(
+                    code=code,
+                    language=lang_clean,
+                    analysis=analysis_res.analysis,
+                    doc_style=doc_style_clean,
+                    revision_feedback=review_res.actionable_feedback,
+                    revision_number=1,
+                )
+                agent_executions["documentation_generation_revision_1"] = revised_gen.model_dump()
+            except HTTPException as http_exc:
+                current_state = WorkflowState.FAILED
+                clean_detail = sanitize_error(str(http_exc.detail))
+                logger.error("Revision generation failed (HTTP %d): %s", http_exc.status_code, clean_detail)
+                raise HTTPException(status_code=http_exc.status_code, detail=clean_detail) from http_exc
+            except Exception as rev_err:
+                current_state = WorkflowState.FAILED
+                clean_tb = sanitize_error(traceback.format_exc())
+                clean_msg = sanitize_error(str(rev_err))
+                logger.error("Unhandled revision generation error in orchestrator:\n%s", clean_tb)
+                raise HTTPException(
+                    status_code=502,
+                    detail=f"Documentation revision error: {clean_msg}",
+                ) from rev_err
 
             if revised_gen.status != "failed" and revised_gen.proposed_code.strip():
                 candidate_code = revised_gen.proposed_code
@@ -190,7 +224,7 @@ class Orchestrator:
         current_state = WorkflowState.AWAITING_APPROVAL
 
         demo_warning = (
-            "Running in DEMO MOCK MODE because neither GEMINI_API_KEY nor OPENAI_API_KEY is configured. Mock output is locally generated and clearly labelled."
+            "Running in DEMO MOCK MODE because GEMINI_API_KEY is not configured. Mock output is locally generated and clearly labelled."
             if gen_res.mode == "demo_mock"
             else None
         )

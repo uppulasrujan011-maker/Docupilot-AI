@@ -4,17 +4,23 @@ services:
     runtime: python
     rootDir: backend
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    startCommand: python -X utf8 -m uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
+      - key: PYTHONUTF8
+        value: "1"
+      - key: PYTHONIOENCODING
+        value: utf-8
+      - key: LANG
+        value: C.UTF-8
+      - key: LC_ALL
+        value: C.UTF-8
       - key: GEMINI_MODEL
-        value: gemini-3.5-flash
+        value: gemini-3.8-flash
       - key: LLM_PROVIDER
         value: gemini
       - key: FRONTEND_ORIGIN
-        value: https://docupilot-ai-three.vercel.app
+        value: https://docupilot-ai-three.vercel.app,https://docupilot-ai-git-main-fursat1.vercel.app
       - key: GEMINI_API_KEY
-        sync: false
-      - key: OPENAI_API_KEY
         sync: false
       - key: DATABASE_PATH
         value: /var/data/docupilot.db

@@ -8,6 +8,7 @@ Supports independent LLM audit when API keys are configured.
 """
 
 import json
+import logging
 import os
 import re
 import time
@@ -16,6 +17,9 @@ from pydantic import BaseModel, Field
 
 from ..analyzer import analyze
 from ..quality import evaluate_documentation_quality
+from .documentation import sanitize_error
+
+logger = logging.getLogger("docupilot.agents.review")
 
 
 class ReviewResult(BaseModel):
@@ -224,7 +228,7 @@ Respond in concise JSON with:
                 from google import genai
                 from google.genai import types
                 client = genai.Client(api_key=key)
-                model = os.getenv("GEMINI_MODEL", "").strip() or "gemini-3.5-flash"
+                model = os.getenv("GEMINI_MODEL", "").strip().strip("'\"") or "gemini-3.8-flash"
                 resp = client.models.generate_content(
                     model=model,
                     contents=prompt,
@@ -252,7 +256,8 @@ Respond in concise JSON with:
                 match = re.search(r"\{[\s\S]*\}", txt)
                 if match:
                     return json.loads(match.group(0))
-        except Exception:
-            # Independent LLM review is advisory; never break pipeline if LLM review call times out
-            pass
+        except Exception as exc:
+            # Independent LLM review is advisory; log sanitized diagnostic and never break pipeline
+            clean_err = sanitize_error(str(exc))
+            logger.warning("Advisory LLM review pass encountered an error (non-fatal): %s", clean_err)
         return None

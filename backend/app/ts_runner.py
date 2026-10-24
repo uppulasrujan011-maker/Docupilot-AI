@@ -46,6 +46,8 @@ def validate_typescript(source: str, timeout_sec: float = 5.0) -> dict[str, Any]
             input=source,
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=timeout_sec,
             check=False,
         )

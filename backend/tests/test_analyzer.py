@@ -16,7 +16,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
-from openai import AuthenticationError, RateLimitError
+try:
+    from openai import AuthenticationError, RateLimitError
+except ImportError:
+    from app.agents.documentation import AuthenticationError, RateLimitError
 
 from app.analyzer import SUPPORTED_LANGUAGES, analyze
 from app.languages import REGISTRY, get_language, list_capabilities

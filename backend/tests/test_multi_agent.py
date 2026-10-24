@@ -22,7 +22,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
-from openai import AuthenticationError, RateLimitError, APIError
+try:
+    from openai import AuthenticationError, RateLimitError, APIError
+except ImportError:
+    from app.agents.documentation import AuthenticationError, RateLimitError, APIError
 
 from app.main import app
 from app.orchestrator import Orchestrator, WorkflowState
@@ -162,7 +165,10 @@ def test_concurrent_independent_review_and_validation(monkeypatch):
 # ------------------------------------------------------------------------------
 # 4. Structured Agent Inputs and Outputs
 # ------------------------------------------------------------------------------
-def test_structured_agent_inputs_and_outputs():
+def test_structured_agent_inputs_and_outputs(monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "")
+    monkeypatch.setenv("OPENAI_API_KEY", "")
+
     # Agent 1: CodeAnalysisAgent
     c_agent = CodeAnalysisAgent()
     c_res = c_agent.run(PYTHON_SAMPLE, "python")
