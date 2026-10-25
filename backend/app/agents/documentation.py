@@ -18,11 +18,11 @@ from pydantic import BaseModel, Field
 logger = logging.getLogger("docupilot.agents.documentation")
 
 
-def sanitize_error(message: str) -> str:
+def sanitize_error(message: Any) -> str:
     """Safely redact API keys and sensitive tokens from error descriptions."""
     if not message:
         return ""
-    text = str(message)
+    text = message if isinstance(message, str) else str(message)
     # Redact Google API keys (AIzaSy... or AQ....) and OpenAI keys (sk-...)
     text = re.sub(r"AIzaSy[a-zA-Z0-9_\-]{33}", "[REDACTED_API_KEY]", text)
     text = re.sub(r"AQ\.[a-zA-Z0-9_\-]{30,}", "[REDACTED_API_KEY]", text)
@@ -324,7 +324,7 @@ class DocumentationGenerationAgent:
         if isinstance(prompt, bytes):
             prompt_str = prompt.decode("utf-8", errors="replace")
         else:
-            prompt_str = str(prompt)
+            prompt_str = prompt
 
         output = ""
         try:
@@ -426,6 +426,11 @@ class DocumentationGenerationAgent:
             pass
 
         model = os.getenv("OPENAI_MODEL", "").strip() or "gpt-4o-mini"
+        if client_cls is None:
+            raise HTTPException(
+                status_code=500,
+                detail="OpenAI SDK is not installed or available in this environment.",
+            )
         client = client_cls(api_key=key, timeout=30.0)
         prompt = build_generation_prompt(code, language, analysis, doc_style, revision_feedback)
 

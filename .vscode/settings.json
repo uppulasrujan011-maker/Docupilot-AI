@@ -1,11 +1,15 @@
 {
-  "python.defaultInterpreterPath": "C:\\Users\\welcome\\AppData\\Local\\Programs\\Python\\Python311\\python.exe",
+  "python.defaultInterpreterPath": "${workspaceFolder}/backend/.venv/Scripts/python.exe",
   "python.analysis.extraPaths": [
     "${workspaceFolder}/backend",
-    "${workspaceFolder}/backend/app"
+    "${workspaceFolder}/backend/app",
+    "${workspaceFolder}/backend/.venv/Lib/site-packages",
+    "C:/Users/welcome/AppData/Local/Programs/Python/Python311/Lib/site-packages"
   ],
   "python.autoComplete.extraPaths": [
     "${workspaceFolder}/backend",
-    "${workspaceFolder}/backend/app"
+    "${workspaceFolder}/backend/app",
+    "${workspaceFolder}/backend/.venv/Lib/site-packages",
+    "C:/Users/welcome/AppData/Local/Programs/Python/Python311/Lib/site-packages"
   ]
 }
