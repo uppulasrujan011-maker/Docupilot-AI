@@ -15,9 +15,17 @@ import time
 from typing import Any, Optional
 from pydantic import BaseModel, Field
 
-from ..analyzer import analyze
-from ..quality import evaluate_documentation_quality
-from .documentation import sanitize_error
+try:
+    from ..analyzer import analyze
+    from ..quality import evaluate_documentation_quality
+except (ImportError, ValueError):
+    from app.analyzer import analyze
+    from app.quality import evaluate_documentation_quality
+
+try:
+    from .documentation import sanitize_error
+except (ImportError, ValueError):
+    from app.agents.documentation import sanitize_error
 
 logger = logging.getLogger("docupilot.agents.review")
 

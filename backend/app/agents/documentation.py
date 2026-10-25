@@ -30,6 +30,27 @@ def sanitize_error(message: str) -> str:
     text = re.sub(r"key=([^&\s]+)", "key=[REDACTED_API_KEY]", text)
     return text
 
+
+def _get_mock_documentation():
+    """Retrieve mock_documentation safely via relative or absolute package import."""
+    try:
+        from ..main import mock_documentation
+        return mock_documentation
+    except (ImportError, ValueError):
+        from app.main import mock_documentation
+        return mock_documentation
+
+
+def _get_main_module():
+    """Retrieve main module safely via relative or absolute package import."""
+    try:
+        from .. import main as main_module
+        return main_module
+    except (ImportError, ValueError):
+        from app import main as main_module
+        return main_module
+
+
 # Support both direct OpenAI and mocked imports from main
 try:
     from openai import APIConnectionError, APIError, AuthenticationError, OpenAI, RateLimitError
@@ -222,7 +243,7 @@ class DocumentationGenerationAgent:
                 revision_feedback=revision_feedback,
             )
         else:
-            from ..main import mock_documentation
+            mock_documentation = _get_mock_documentation()
             proposed = mock_documentation(code, language, analysis, doc_style=doc_style_clean)
             mode = "demo_mock"
             model_name = "mock-engine"
@@ -280,7 +301,7 @@ class DocumentationGenerationAgent:
     ) -> tuple[str, str, str]:
         key = get_gemini_key()
         if not key:
-            from ..main import mock_documentation
+            mock_documentation = _get_mock_documentation()
             return (
                 mock_documentation(code, language, analysis, doc_style=doc_style),
                 "demo_mock",
@@ -388,7 +409,7 @@ class DocumentationGenerationAgent:
     ) -> tuple[str, str, str]:
         key = get_openai_key()
         if not key:
-            from ..main import mock_documentation
+            mock_documentation = _get_mock_documentation()
             return (
                 mock_documentation(code, language, analysis, doc_style=doc_style),
                 "demo_mock",
@@ -398,7 +419,7 @@ class DocumentationGenerationAgent:
         # Check if app.main has a mocked OpenAI class for testing
         client_cls = OpenAI
         try:
-            from .. import main as main_module
+            main_module = _get_main_module()
             if hasattr(main_module, "OpenAI"):
                 client_cls = main_module.OpenAI
         except Exception:
