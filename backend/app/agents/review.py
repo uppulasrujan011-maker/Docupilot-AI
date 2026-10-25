@@ -260,7 +260,12 @@ Respond in concise JSON with:
                     ],
                     temperature=0.1,
                 )
-                txt = completion.choices[0].message.content or ""
+                txt = ""
+                choices = getattr(completion, "choices", None)
+                if choices and len(choices) > 0:
+                    first_choice = choices[0]
+                    msg = getattr(first_choice, "message", None)
+                    txt = getattr(msg, "content", "") or ""
                 match = re.search(r"\{[\s\S]*\}", txt)
                 if match:
                     return json.loads(match.group(0))

@@ -447,8 +447,11 @@ class DocumentationGenerationAgent:
                 ],
                 temperature=0.2,
             )
-            if completion.choices and completion.choices[0].message:
-                output = completion.choices[0].message.content or ""
+            choices = getattr(completion, "choices", None)
+            if choices and len(choices) > 0:
+                first_choice = choices[0]
+                msg = getattr(first_choice, "message", None)
+                output = getattr(msg, "content", "") or ""
         except AuthenticationError as auth_err:
             raise HTTPException(
                 status_code=401,
